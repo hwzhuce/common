@@ -5,14 +5,17 @@ using System.Text;
 using iTextSharp.text;
 using iTextSharp.text.pdf;
 
-namespace Common.PDFUtil
+namespace CWPS.Common.PDFUtil
 {
+    /// <summary>
+    /// PDF帮助类。by liuhy on 20151019
+    /// </summary>
     public static class PDFHelper
     {
 
         #region 创建pdf文件
         /// <summary>
-        /// 创建pdf文件。
+        /// 创建pdf文件。by liuhy on 20141009
         /// </summary>
         /// <param name="pdfName">包含文件路径的pdf文件名</param>
         /// <param name="pdfContent">pdf文件的内容</param>
@@ -35,7 +38,7 @@ namespace Common.PDFUtil
 
         #region 创建pdf文件
         /// <summary>
-        /// 创建pdf文件。
+        /// 创建pdf文件。by liuhy on 20141103
         /// </summary>
         /// <param name="pdfName">包含文件路径的pdf文件名</param>
         /// <param name="pdfContent">pdf文件的内容</param>
@@ -107,7 +110,7 @@ namespace Common.PDFUtil
 
         #region 通过TXT文件创建PDF文件
         /// <summary>
-        /// 通过TXT文件创建PDF文件。
+        /// 通过TXT文件创建PDF文件。by liuhy on 20141113
         /// </summary>
         /// <param name="pdfName">生成的pdf文件名（包含文件路径）</param>
         /// <param name="txtName">用于生成PDF的txt文件名(包含文件路径)</param>
@@ -131,7 +134,7 @@ namespace Common.PDFUtil
 
         #region 通过TXT文件创建PDF文件
         /// <summary>
-        /// 通过TXT文件创建PDF文件。
+        /// 通过TXT文件创建PDF文件。by liuhy on 20141113
         /// </summary>
         /// <param name="pdfName">生成的pdf文件名（包含文件路径）</param>
         /// <param name="txtName">用于生成PDF的txt文件名(包含文件路径)</param>
@@ -164,8 +167,8 @@ namespace Common.PDFUtil
             bool bResult = false;
             try
             {
-
-                PdfReader reader;
+                List<PdfReader> allFiles = new List<PdfReader>();
+                PdfReader reader = null;
                 Document document = new Document();
                 PdfWriter writer = PdfWriter.GetInstance(document, new FileStream(outMergeFile, FileMode.OpenOrCreate));
                 document.Open();
@@ -176,6 +179,7 @@ namespace Common.PDFUtil
                     if (!string.IsNullOrEmpty(fileList[i]))
                     {
                         reader = new PdfReader(fileList[i]);
+                        allFiles.Add(reader);
                         int iPageNum = reader.NumberOfPages;
                         for (int j = 1; j <= iPageNum; j++)
                         {
@@ -200,7 +204,12 @@ namespace Common.PDFUtil
                     }
                 }
                 document.Close();
-
+                writer.Close();
+                foreach (var file in allFiles)
+                {
+                    file.Close();
+                }
+                allFiles = null;
                 bResult = true;
             }
             catch (Exception ex)
@@ -214,7 +223,7 @@ namespace Common.PDFUtil
 
         #region JPG转PDF
         /// <summary>
-        /// JPG转PDF。
+        /// JPG转PDF。by liuhy on 20151019
         /// </summary>
         /// <param name="pdfName">输出PDF文件路径</param>
         /// <param name="jpgName">输入JPG文件路径</param>
@@ -324,6 +333,67 @@ namespace Common.PDFUtil
         }
         #endregion
 
-        
+        /// <summary>
+        /// pdf添加水印
+        /// </summary>
+        /// <param name="srcFile"></param>
+        /// <param name="text"></param>
+        /// <param name="dest"></param>
+        public static void addWaterMark(String srcFile, String text,
+                Stream dest)
+        {
+            // 待加水印的文件
+            using (PdfReader reader = new PdfReader(srcFile))
+            {
+                //FileStream fs = new FileStream("d:/123.pdf", FileMode.OpenOrCreate);
+                // 加完水印的文件
+                using (PdfStamper stamper = new PdfStamper(reader, dest))
+                {
+                    int total = reader.NumberOfPages + 1;
+                    PdfContentByte content;
+                    // 设置字体
+                    BaseFont font = BaseFont.CreateFont();
+                    // 循环对每页插入水印
+                    for (int i = 1; i < total; i++)
+                    {
+                        int textHeight = 60;
+                        Rectangle pageSize = reader.GetPageSize(i);
+                        float pageWidth = pageSize.Width;
+                        float pageHeigth = pageSize.Height;
+
+                        // 水印的起始
+                        content = stamper.GetOverContent(i);
+                        // 开始
+                        content.BeginText();
+                        while (textHeight < pageHeigth - 110)
+                        {
+                            int textWidth = 40;
+                            while (textWidth < pageWidth - 60)
+                            {
+                                // 设置颜色 默认为蓝色
+                                content.SetColorFill(BaseColor.GRAY);
+                                // 设置字体及字号
+                                content.SetFontAndSize(font, 15);
+                                // 设置起始位置
+                                // content.setTextMatrix(400, 880);
+                                content.SaveState();
+                                PdfGState gs1 = new PdfGState();
+                                gs1.FillOpacity = 0.2f;
+                                content.SetGState(gs1);
+                                // 开始写入水印
+                                content.ShowTextAligned(Element.ALIGN_LEFT, text, textWidth,
+                                        textHeight, 45);
+                                content.RestoreState();
+
+                                textWidth += 60;
+                            }
+                            textHeight += 110;
+                        }
+                        content.EndText();
+                    }
+                    dest.Flush();
+                }
+            }
+        }
     }
 }
