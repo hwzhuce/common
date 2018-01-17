@@ -1,0 +1,1 @@
+https://msdn.microsoft.com/zh-cn/library/system.transactions.transactionscope(VS.80).aspx
